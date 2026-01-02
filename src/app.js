@@ -200,32 +200,68 @@ class HackerNewsAPI {
       if (response.ok) {
         const articles = await response.json();
 
-        // 为每篇文章获取AI摘要（如果数据库中有的话）
+        // 批量获取AI摘要以减少请求数量
+        // 首先检查哪些文章已经包含AI摘要信息（从数据库直接获取的）
         const articlesWithSummary = [];
+        const missingSummaryIds = [];
 
-        for (const article of articles) {
-          // 如果文章是从数据库获取的，已经包含AI摘要信息
-          // 如果是从Hacker News API获取的，尝试单独获取AI摘要
-          if (!article.summary_model) {
-            // 只有在没有摘要信息时才尝试获取
-            try {
-              const summaryResponse = await fetch(
-                `${DB_API_BASE}/api/ai-summary/${article.id}`,
-              );
-              if (summaryResponse.ok) {
-                const summaryData = await summaryResponse.json();
-                article.ai_summary = summaryData.summary;
-                article.summary_model = summaryData.model;
-                article.summary_created_at = summaryData.created_at;
-              }
-            } catch (error) {
-              console.warn(
-                `Could not fetch AI summary for ${article.id}:`,
-                error,
-              );
-            }
+        // 分离已有AI摘要的文章和没有AI摘要的文章
+        articles.forEach((article) => {
+          // 如果文章已经包含从数据库获取的AI摘要信息（summary和summary_model字段）
+          if (article.summary != null && article.summary_model != null) {
+            // 将数据库中的摘要信息复制到标准字段
+            article.ai_summary = article.summary;
+            article.summary_model = article.summary_model;
+            article.summary_created_at = article.created_at; // 注意：这可能不是摘要创建时间，但暂用此字段
+            articlesWithSummary.push(article);
+          } else {
+            // 需要额外获取AI摘要
+            missingSummaryIds.push(article.id);
+            articlesWithSummary.push(article); // 先添加到结果中
           }
-          articlesWithSummary.push(article);
+        });
+
+        if (missingSummaryIds.length > 0) {
+          try {
+            const summaryResponse = await fetch(
+              `${DB_API_BASE}/api/ai-summaries/batch`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ articleIds: missingSummaryIds }),
+              },
+            );
+
+            if (summaryResponse.ok) {
+              const summaries = await summaryResponse.json();
+
+              // 将摘要映射到对应的文章
+              const summaryMap = {};
+              summaries.forEach((summary) => {
+                summaryMap[summary.article_id] = summary;
+              });
+
+              // 更新缺少摘要的文章
+              articlesWithSummary.forEach((article) => {
+                if (!article.ai_summary) {
+                  // 只为没有摘要的文章添加
+                  const summary = summaryMap[article.id];
+                  if (summary) {
+                    article.ai_summary = summary.summary;
+                    article.summary_model = summary.model;
+                    article.summary_created_at = summary.created_at;
+                  }
+                }
+              });
+            }
+          } catch (summaryError) {
+            console.warn(
+              "Could not fetch AI summaries in batch:",
+              summaryError,
+            );
+          }
         }
 
         return articlesWithSummary;
@@ -244,28 +280,73 @@ class HackerNewsAPI {
     const uncachedIds = [];
     const results = [];
 
-    // 首先检查哪些文章已缓存
+    // 批量获取AI摘要以减少请求数量
+    const cachedIds = [];
     for (const id of ids) {
       const cached = await this.getArticleFromDB(id);
       if (cached) {
-        // 为缓存文章也获取AI摘要
-        try {
-          const summaryResponse = await fetch(
-            `${DB_API_BASE}/api/ai-summary/${id}`,
-          );
-          if (summaryResponse.ok) {
-            const summaryData = await summaryResponse.json();
-            cached.ai_summary = summaryData.summary;
-            cached.summary_model = summaryData.model;
-            cached.summary_created_at = summaryData.created_at;
-          }
-        } catch (error) {
-          console.warn(`Could not fetch AI summary for ${id}:`, error);
-        }
-
         results.push(cached);
+        cachedIds.push(id);
       } else {
         uncachedIds.push(id);
+      }
+    }
+
+    // 批量获取缓存文章的AI摘要
+    if (cachedIds.length > 0) {
+      try {
+        const summaryResponse = await fetch(
+          `${DB_API_BASE}/api/ai-summaries/batch`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ articleIds: cachedIds }),
+          },
+        );
+
+        if (summaryResponse.ok) {
+          const summaries = await summaryResponse.json();
+
+          // 将摘要映射到对应的文章
+          const summaryMap = {};
+          summaries.forEach((summary) => {
+            summaryMap[summary.article_id] = summary;
+          });
+
+          // 更新结果数组中的文章
+          results.forEach((cached) => {
+            const summary = summaryMap[cached.id];
+            if (summary) {
+              cached.ai_summary = summary.summary;
+              cached.summary_model = summary.model;
+              cached.summary_created_at = summary.created_at;
+            }
+          });
+        }
+      } catch (summaryError) {
+        console.warn(
+          "Could not fetch cached AI summaries in batch:",
+          summaryError,
+        );
+
+        // 如果批量获取失败，回退到单独获取每篇缓存文章的AI摘要
+        for (const cached of results) {
+          try {
+            const summaryResponse = await fetch(
+              `${DB_API_BASE}/api/ai-summary/${cached.id}`,
+            );
+            if (summaryResponse.ok) {
+              const summaryData = await summaryResponse.json();
+              cached.ai_summary = summaryData.summary;
+              cached.summary_model = summaryData.model;
+              cached.summary_created_at = summaryData.created_at;
+            }
+          } catch (error) {
+            console.warn(`Could not fetch AI summary for ${cached.id}:`, error);
+          }
+        }
       }
     }
 

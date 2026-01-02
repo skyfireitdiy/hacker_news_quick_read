@@ -210,6 +210,53 @@ app.get("/api/ai-summary/:articleId", async (req, res) => {
   }
 });
 
+// API endpoint to get multiple AI summaries by article IDs in batch
+app.post("/api/ai-summaries/batch", async (req, res) => {
+  try {
+    const { articleIds } = req.body;
+
+    // Validate input
+    if (!articleIds || !Array.isArray(articleIds)) {
+      return res.status(400).json({ error: "Article IDs array is required" });
+    }
+
+    // Limit batch size to prevent abuse
+    if (articleIds.length > 100) {
+      return res
+        .status(400)
+        .json({ error: "Maximum 100 article IDs allowed per request" });
+    }
+
+    // Remove duplicates and ensure all IDs are integers
+    const uniqueIds = [...new Set(articleIds.map((id) => parseInt(id)))].filter(
+      (id) => !isNaN(id),
+    );
+
+    if (uniqueIds.length === 0) {
+      return res.status(400).json({ error: "No valid article IDs provided" });
+    }
+
+    // Build query to fetch multiple AI summaries
+    const placeholders = uniqueIds.map(() => "?").join(",");
+    const query = `SELECT * FROM ai_summaries WHERE article_id IN (${placeholders})`;
+
+    const summaries = await new Promise((resolve, reject) => {
+      db.db.all(query, uniqueIds, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+
+    res.json(summaries);
+  } catch (error) {
+    console.error("Error fetching AI summaries in batch:", error);
+    res.status(500).json({ error: "Failed to fetch AI summaries in batch" });
+  }
+});
+
 // API endpoint to generate article summary on the server side
 require("dotenv").config();
 app.post("/api/generate-summary", async (req, res) => {
