@@ -1,111 +1,175 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hacker News Reader</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif']
-                    },
-                    colors: {
-                        'ios-gray': '#F2F2F7',
-                        'cool-gray': '#F9F9FB'
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "SF Pro Display", "system-ui", "sans-serif"],
+            },
+            colors: {
+              "ios-gray": "#F2F2F7",
+              "cool-gray": "#F9F9FB",
+            },
+          },
+        },
+      };
     </script>
     <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        .frosted-glass {
-            backdrop-filter: blur(50px);
-            -webkit-backdrop-filter: blur(50px);
-        }
-        .dual-stroke {
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            box-shadow: inset 0 0 0 1px rgba(229, 229, 234, 0.4);
-        }
-        .article-card {
-            transition: all 0.3s ease;
-        }
-        .article-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
-        }
-        .search-container {
-            transition: all 0.3s ease;
-        }
-        .search-container:focus-within {
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
-        }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+      }
+      .frosted-glass {
+        backdrop-filter: blur(50px);
+        -webkit-backdrop-filter: blur(50px);
+      }
+      .dual-stroke {
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(229, 229, 234, 0.4);
+      }
+      .article-card {
+        transition: all 0.3s ease;
+      }
+      .article-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px -6px rgba(0, 0, 0, 0.08);
+      }
+      .search-container {
+        transition: all 0.3s ease;
+      }
+      .search-container:focus-within {
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+      }
     </style>
-</head>
-<body class="bg-ios-gray min-h-screen">
-    <div class="max-w-4xl mx-auto p-2">
-        <!-- Header -->
-        <header class="frosted-glass dual-stroke bg-white/50 rounded-[32px] p-4 mb-4 shadow-lg">
-            <div class="text-center">
-                <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">Hacker News Reader</h1>
-                <p class="text-gray-600 text-sm font-medium">Browse and filter the latest tech stories</p>
-            </div>
-        </header>
-
-        <!-- Search Section -->
-        <section class="frosted-glass dual-stroke bg-white/50 rounded-[32px] p-4 mb-4">
-            <div class="search-container dual-stroke bg-gray-100/50 rounded-[20px] p-3 shadow-inner mb-3">
-                <div class="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        placeholder="Search articles by keyword..." 
-                        class="w-full bg-transparent border-none focus:ring-0 ml-2 py-1.5 text-base placeholder-gray-500"
-                        autocomplete="off"
-                    >
-                    <button id="searchBtn" class="ml-3 px-4 py-1.5 bg-[#1C1C1E] text-white font-semibold rounded-lg text-sm active:scale-[0.98] transition-transform duration-200">
-                        Search
-                    </button>
-                </div>
-            </div>
-            
-            <div class="flex flex-wrap gap-1.5">
-                <button class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200" data-type="all">All</button>
-                <button class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200" data-type="story">Stories</button>
-                <button class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200" data-type="job">Jobs</button>
-                <button class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200" data-type="ask_hn">Ask HN</button>
-                <button class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200" data-type="poll">Polls</button>
-            </div>
-        </section>
-
-        <!-- Loading Indicator -->
-        <div id="loading" class="hidden text-center py-10">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
-            <p class="mt-4 text-gray-700 font-medium">Loading articles...</p>
+  </head>
+  <body class="bg-ios-gray min-h-screen">
+    <div class="w-4/5 mx-auto p-2">
+      <!-- Header -->
+      <header
+        class="frosted-glass dual-stroke bg-white/50 rounded-[32px] p-4 mb-4 shadow-lg"
+      >
+        <div class="text-center">
+          <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 mb-1">
+            Hacker News Reader
+          </h1>
+          <p class="text-gray-600 text-sm font-medium">
+            Browse and filter the latest tech stories
+          </p>
         </div>
+      </header>
 
-        <!-- Articles Container -->
-        <div id="articlesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Articles will be loaded here -->
-        </div>
-
-        <!-- Load More Button -->
-        <div class="mt-4 text-center hidden" id="loadMoreContainer">
-            <button id="loadMoreBtn" class="px-6 py-2 dual-stroke bg-white/70 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform duration-200">
-                Load More
+      <!-- Search Section -->
+      <section
+        class="frosted-glass dual-stroke bg-white/50 rounded-[32px] p-4 mb-4"
+      >
+        <div
+          class="search-container dual-stroke bg-gray-100/50 rounded-[20px] p-3 shadow-inner mb-3"
+        >
+          <div class="flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-gray-500 ml-2"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search articles by keyword..."
+              class="w-full bg-transparent border-none focus:ring-0 ml-2 py-1.5 text-base placeholder-gray-500"
+              autocomplete="off"
+            />
+            <button
+              id="searchBtn"
+              class="ml-3 px-4 py-1.5 bg-[#1C1C1E] text-white font-semibold rounded-lg text-sm active:scale-[0.98] transition-transform duration-200"
+            >
+              Search
             </button>
+          </div>
         </div>
+
+        <div class="flex flex-wrap gap-1.5">
+          <button
+            class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
+            data-type="all"
+          >
+            All
+          </button>
+          <button
+            class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
+            data-type="story"
+          >
+            Stories
+          </button>
+          <button
+            class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
+            data-type="job"
+          >
+            Jobs
+          </button>
+          <button
+            class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
+            data-type="ask_hn"
+          >
+            Ask HN
+          </button>
+          <button
+            class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
+            data-type="poll"
+          >
+            Polls
+          </button>
+        </div>
+      </section>
+
+      <!-- Loading Indicator -->
+      <div id="loading" class="hidden text-center py-10">
+        <div
+          class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"
+        ></div>
+        <p class="mt-4 text-gray-700 font-medium">Loading articles...</p>
+      </div>
+
+      <!-- Articles Container -->
+      <div
+        id="articlesContainer"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
+        <!-- Articles will be loaded here -->
+      </div>
+
+      <!-- Load More Button -->
+      <div class="mt-4 text-center hidden" id="loadMoreContainer">
+        <button
+          id="loadMoreBtn"
+          class="px-6 py-2 dual-stroke bg-white/70 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform duration-200"
+        >
+          Load More
+        </button>
+      </div>
     </div>
 
     <script src="app.js"></script>
-</body>
+  </body>
 </html>
