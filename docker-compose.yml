@@ -1,0 +1,38 @@
+version: "3.8"
+
+services:
+  hacker-news-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hacker-news-quick-read
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+    volumes:
+      - ./data:/app/data
+      - hacker_news_db_volume:/app/hacker_news.db
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--quiet",
+          "--tries=1",
+          "--spider",
+          "http://localhost:3000",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  hacker_news_db_volume:
+    # Persistent volume for SQLite database
