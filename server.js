@@ -83,6 +83,79 @@ app.get('/api/ai-summary/:articleId', async (req, res) => {
   }
 });
 
+// API endpoint to generate article summary on the server side
+require('dotenv').config();
+app.post('/api/generate-summary', async (req, res) => {
+  try {
+    const { content, title, model } = req.body;
+    
+    // 获取OpenAI配置
+    const apiKey = process.env.OPENAI_API_KEY;
+    const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+    const defaultModel = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
+    
+    if (!apiKey) {
+      return res.status(400).json({ error: 'OpenAI API key not configured on server' });
+    }
+    
+    // 使用服务器配置的模型，忽略前端传递的模型参数
+    const finalModel = defaultModel;
+    
+    const prompt = `请提供以下文章的简洁中文摘要：
+
+标题: ${title}
+
+内容: ${content}
+
+摘要（3-5个要点，用中文）：`;
+    
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: finalModel,
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个助手，能够用中文提供文章的简洁摘要，以3-5个要点突出关键信息。'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3,
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('OpenAI API error:', response.status, response.statusText, errorData);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+    }
+    
+    const data = await response.json();
+    
+    // 检查API响应是否包含预期的结构
+    if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+      console.error('Invalid response format from OpenAI API:', data);
+      throw new Error('Invalid response format from OpenAI API - choices not found');
+    }
+    
+    const summary = data.choices[0].message.content.trim();
+    
+    res.json({ summary });
+    
+  } catch (error) {
+    console.error('Error generating summary:', error);
+    res.status(500).json({ error: `Failed to generate summary: ${error.message}` });
+  }
+});
+
 // API endpoint to get content from URL
 app.get('/api/url-content', async (req, res) => {
   try {

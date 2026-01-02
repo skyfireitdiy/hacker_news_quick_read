@@ -11,8 +11,10 @@ let openAIConfig = {
   model: "gpt-3.5-turbo",
 };
 
-// Load OpenAI configuration from file
+// OpenAI configuration is handled on the server side
 async function loadOpenAIConfig() {
+  // Configuration is now handled on the server to avoid exposing API keys
+  // We keep this function for backward compatibility, but it's not used for API keys
   try {
     const response = await fetch("openai_config.json");
     if (response.ok) {
@@ -20,7 +22,7 @@ async function loadOpenAIConfig() {
       openAIConfig = { ...openAIConfig, ...config };
     }
   } catch (error) {
-    console.warn("Could not load OpenAI config:", error);
+    console.warn("Could not load OpenAI config, using default settings:", error);
   }
 }
 
@@ -30,39 +32,15 @@ loadOpenAIConfig();
 // OpenAI API Client
 class OpenAIClient {
   static async getArticleSummary(content, title) {
-    if (!openAIConfig.api_key) {
-      throw new Error("OpenAI API key not configured");
-    }
-
-    const prompt = `请提供以下文章的简洁中文摘要：
-
-标题: ${title}
-
-内容: ${content}
-
-摘要（3-5个要点，用中文）：`;
-
-    const response = await fetch(`${openAIConfig.base_url}/chat/completions`, {
+    // 通过后端API获取文章摘要，避免在前端暴露API密钥
+    const response = await fetch(`${DB_API_BASE}/api/generate-summary`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openAIConfig.api_key}`,
       },
       body: JSON.stringify({
-        model: openAIConfig.model,
-        messages: [
-          {
-            role: "system",
-            content:
-              "你是一个助手，能够用中文提供文章的简洁摘要，以3-5个要点突出关键信息。",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        max_tokens: 500,
-        temperature: 0.3,
+        content: content,
+        title: title,
       }),
     });
 
@@ -71,7 +49,7 @@ class OpenAIClient {
     }
 
     const data = await response.json();
-    return data.choices[0].message.content.trim();
+    return data.summary;
   }
 }
 
@@ -327,9 +305,8 @@ class ArticleRenderer {
               <button 
                 class="ai-summary-btn ml-3 px-2 py-1 dual-stroke bg-white/70 rounded text-[0.6rem] font-medium text-gray-700 active:scale-[0.98] transition-transform duration-200"
                 data-article-id="${article.id}"
-                ${!openAIConfig.api_key ? 'disabled title="OpenAI API key not configured"' : ""}
               >
-                ${!openAIConfig.api_key ? "Config Needed" : article.ai_summary ? "Regenerate" : "AI Summary"}
+                ${article.ai_summary ? "Regenerate" : "AI Summary"}
               </button>
             </div>
             <div id="ai-summary-${article.id}" class="ai-summary-content ${article.ai_summary ? "" : "hidden"} mt-2 p-2 bg-gray-100/50 rounded-lg text-xs text-gray-700">
@@ -600,15 +577,28 @@ class HackerNewsApp {
           summaryContainer.innerHTML =
             '<div class="text-blue-500">Fetching content from URL...</div>';
 
-          // 调用后端API从URL获取内容
-          const urlContentResponse = await fetch(
-            `${DB_API_BASE}/api/url-content?url=${encodeURIComponent(article.url)}`,
-          );
-
-          if (urlContentResponse.ok) {
-            const urlContentData = await urlContentResponse.json();
-            content = urlContentData.content;
-
+          // 从前端直接从URL获取内容，利用浏览器代理
+          const response = await fetch(article.url);
+          
+          if (response.ok) {
+            const html = await response.text();
+            
+            // 解析HTML并提取文本内容
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // 移除script和style元素以避免提取它们的内容
+            const scripts = doc.querySelectorAll('script, style, noscript');
+            scripts.forEach(el => el.remove());
+            
+            // 获取文本内容
+            content = doc.body ? doc.body.textContent : doc.textContent;
+            
+            // 清理文本内容
+            content = content
+              .replace(/\s+/g, ' ') // 将多个空白字符替换为单个空格
+              .trim();
+            
             // 确保内容不是太长，如果太长则截断
             if (content.length > 10000) {
               // 限制为10000字符
@@ -618,9 +608,8 @@ class HackerNewsApp {
             }
           } else {
             // 如果获取URL内容失败，使用原文URL和标题作为fallback
-            const errorData = await urlContentResponse.json();
             console.warn(
-              `Failed to fetch content from URL: ${errorData.error}`,
+              `Failed to fetch content from URL: ${response.status} ${response.statusText}`,
             );
             content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
           }
@@ -673,11 +662,11 @@ class HackerNewsApp {
       summaryContainer.innerHTML = `<div class="text-red-500 text-xs">Error: ${error.message}</div>`;
       btn.textContent = "AI Summary";
 
-      // 如果是API密钥问题，提示用户检查配置
+      // 服务器端会处理API密钥验证，这里不因API密钥问题禁用按钮
       if (error.message.includes("API key")) {
-        btn.disabled = true;
-        btn.title = "OpenAI API key not configured";
-        btn.textContent = "Config Needed";
+        btn.disabled = false;  // 服务器端处理密钥检查，按钮保持可用
+        btn.title = "";
+        btn.textContent = "AI Summary";
       } else {
         btn.disabled = false;
       }
