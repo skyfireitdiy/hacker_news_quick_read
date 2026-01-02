@@ -31,6 +31,19 @@ app.get("/api/articles", async (req, res) => {
 });
 
 // API endpoint to get specific article
+// API endpoint to save article
+app.post("/api/article", async (req, res) => {
+  try {
+    const article = req.body;
+    const result = await db.saveArticle(article);
+    res.json(result);
+  } catch (error) {
+    console.error("Error saving article:", error);
+    res.status(500).json({ error: "Failed to save article" });
+  }
+});
+
+// API endpoint to get specific article
 app.get("/api/article/:id", async (req, res) => {
   try {
     const article = await db.getArticleById(parseInt(req.params.id));
@@ -42,6 +55,119 @@ app.get("/api/article/:id", async (req, res) => {
   } catch (error) {
     console.error("Error fetching article:", error);
     res.status(500).json({ error: "Failed to fetch article" });
+  }
+});
+
+// API endpoint to get multiple articles by IDs in batch
+app.post("/api/articles/batch", async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    // Validate input
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ error: "IDs array is required" });
+    }
+
+    // Limit batch size to prevent abuse
+    if (ids.length > 100) {
+      return res
+        .status(400)
+        .json({ error: "Maximum 100 IDs allowed per request" });
+    }
+
+    // Remove duplicates and ensure all IDs are integers
+    const uniqueIds = [...new Set(ids.map((id) => parseInt(id)))].filter(
+      (id) => !isNaN(id),
+    );
+
+    if (uniqueIds.length === 0) {
+      return res.status(400).json({ error: "No valid IDs provided" });
+    }
+
+    // Fetch articles from database first
+    const articles = [];
+
+    // Use a more efficient approach: fetch all cached articles in one query
+    if (uniqueIds.length > 0) {
+      const placeholders = uniqueIds.map(() => "?").join(",");
+      const query = `SELECT a.*, s.summary, s.model as summary_model 
+        FROM articles a 
+        LEFT JOIN ai_summaries s ON a.hn_id = s.article_id 
+        WHERE a.hn_id IN (${placeholders})`;
+
+      const cachedArticles = await new Promise((resolve, reject) => {
+        db.db.all(query, uniqueIds, (err, rows) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        });
+      });
+
+      // Create a map for quick lookup
+      const cachedMap = {};
+      cachedArticles.forEach((article) => {
+        cachedMap[article.hn_id] = article;
+      });
+
+      // Add cached articles to results and identify uncached IDs
+      const uncachedIds = [];
+      uniqueIds.forEach((id) => {
+        if (cachedMap[id]) {
+          articles.push(cachedMap[id]);
+        } else {
+          uncachedIds.push(id);
+        }
+      });
+
+      // Fetch uncached articles from Hacker News API if any
+      if (uncachedIds.length > 0) {
+        // Fetch uncached articles from Hacker News API
+        const promises = uncachedIds.map(async (id) => {
+          try {
+            const response = await fetch(
+              `https://hacker-news.firebaseio.com/v0/item/${id}.json`,
+            );
+            if (response.ok) {
+              return await response.json();
+            } else {
+              console.error(
+                `Failed to fetch article ${id}: ${response.status} ${response.statusText}`,
+              );
+              return null;
+            }
+          } catch (error) {
+            console.error(`Error fetching article ${id}:`, error);
+            return null;
+          }
+        });
+
+        const fetchedArticles = await Promise.all(promises);
+
+        // Filter out null results and save them to database
+        for (const article of fetchedArticles) {
+          if (article) {
+            articles.push(article);
+
+            // Save to database in the background
+            try {
+              await db.saveArticle(article);
+            } catch (saveError) {
+              console.error(
+                `Error saving article ${article.id} to database:`,
+                saveError,
+              );
+            }
+          }
+        }
+      }
+    }
+
+    res.json(articles);
+  } catch (error) {
+    console.error("Error fetching articles in batch:", error);
+    res.status(500).json({ error: "Failed to fetch articles in batch" });
   }
 });
 

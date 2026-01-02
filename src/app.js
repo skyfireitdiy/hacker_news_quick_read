@@ -186,6 +186,60 @@ class HackerNewsAPI {
 
   // 并行获取多篇文章详情
   static async getItems(ids) {
+    // 批量获取文章详情，优先使用后端批量API端点
+    try {
+      // 使用后端提供的批量获取API端点，更高效
+      const response = await fetch(`${DB_API_BASE}/api/articles/batch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      if (response.ok) {
+        const articles = await response.json();
+
+        // 为每篇文章获取AI摘要（如果数据库中有的话）
+        const articlesWithSummary = [];
+
+        for (const article of articles) {
+          // 如果文章是从数据库获取的，已经包含AI摘要信息
+          // 如果是从Hacker News API获取的，尝试单独获取AI摘要
+          if (!article.summary_model) {
+            // 只有在没有摘要信息时才尝试获取
+            try {
+              const summaryResponse = await fetch(
+                `${DB_API_BASE}/api/ai-summary/${article.id}`,
+              );
+              if (summaryResponse.ok) {
+                const summaryData = await summaryResponse.json();
+                article.ai_summary = summaryData.summary;
+                article.summary_model = summaryData.model;
+                article.summary_created_at = summaryData.created_at;
+              }
+            } catch (error) {
+              console.warn(
+                `Could not fetch AI summary for ${article.id}:`,
+                error,
+              );
+            }
+          }
+          articlesWithSummary.push(article);
+        }
+
+        return articlesWithSummary;
+      } else {
+        console.warn("Batch API failed, falling back to individual requests");
+      }
+    } catch (error) {
+      console.warn(
+        "Batch API request failed, falling back to individual requests:",
+        error,
+      );
+    }
+
+    // Fallback to original implementation if batch API is unavailable
     // 对于已缓存的文章，我们直接从数据库快速获取
     const uncachedIds = [];
     const results = [];
@@ -695,12 +749,12 @@ class HackerNewsApp {
   async loadInitialData() {
     this.showLoading();
     try {
-      // 获取前100个热门文章ID
-      const topIds = await HackerNewsAPI.getStories("topstories", 100);
-      // 获取前50个新文章ID
-      const newIds = await HackerNewsAPI.getStories("newstories", 50);
-      // 获取前50个最佳文章ID
-      const bestIds = await HackerNewsAPI.getStories("beststories", 50);
+      // 获取前30个热门文章ID（减少初始加载量以提升性能）
+      const topIds = await HackerNewsAPI.getStories("topstories", 30);
+      // 获取前20个新文章ID（减少初始加载量以提升性能）
+      const newIds = await HackerNewsAPI.getStories("newstories", 20);
+      // 获取前20个最佳文章ID（减少初始加载量以提升性能）
+      const bestIds = await HackerNewsAPI.getStories("beststories", 20);
 
       // 合并所有ID并去重
       const allIds = [...new Set([...topIds, ...newIds, ...bestIds])];
