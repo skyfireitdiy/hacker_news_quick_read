@@ -1,26 +1,26 @@
 // Database API client
-const DB_API_BASE = '/api';
+const DB_API_BASE = "";
 
 // Hacker News API Client
-const API_BASE = 'https://hacker-news.firebaseio.com/v0';
+const API_BASE = "https://hacker-news.firebaseio.com/v0";
 
 // OpenAI Configuration
 let openAIConfig = {
-  base_url: 'https://api.openai.com/v1',
-  api_key: '',
-  model: 'gpt-3.5-turbo'
+  base_url: "https://api.openai.com/v1",
+  api_key: "",
+  model: "gpt-3.5-turbo",
 };
 
 // Load OpenAI configuration from file
 async function loadOpenAIConfig() {
   try {
-    const response = await fetch('openai_config.json');
+    const response = await fetch("openai_config.json");
     if (response.ok) {
       const config = await response.json();
       openAIConfig = { ...openAIConfig, ...config };
     }
   } catch (error) {
-    console.warn('Could not load OpenAI config:', error);
+    console.warn("Could not load OpenAI config:", error);
   }
 }
 
@@ -31,9 +31,9 @@ loadOpenAIConfig();
 class OpenAIClient {
   static async getArticleSummary(content, title) {
     if (!openAIConfig.api_key) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error("OpenAI API key not configured");
     }
-    
+
     const prompt = `请提供以下文章的简洁中文摘要：
 
 标题: ${title}
@@ -41,34 +41,35 @@ class OpenAIClient {
 内容: ${content}
 
 摘要（3-5个要点，用中文）：`;
-    
+
     const response = await fetch(`${openAIConfig.base_url}/chat/completions`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openAIConfig.api_key}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAIConfig.api_key}`,
       },
       body: JSON.stringify({
         model: openAIConfig.model,
         messages: [
-          { 
-            role: 'system', 
-            content: '你是一个助手，能够用中文提供文章的简洁摘要，以3-5个要点突出关键信息。' 
+          {
+            role: "system",
+            content:
+              "你是一个助手，能够用中文提供文章的简洁摘要，以3-5个要点突出关键信息。",
           },
-          { 
-            role: 'user', 
-            content: prompt 
-          }
+          {
+            role: "user",
+            content: prompt,
+          },
         ],
         max_tokens: 500,
-        temperature: 0.3
-      })
+        temperature: 0.3,
+      }),
     });
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
-    
+
     const data = await response.json();
     return data.choices[0].message.content.trim();
   }
@@ -76,7 +77,7 @@ class OpenAIClient {
 
 class HackerNewsAPI {
   // 获取文章类型列表
-  static async getStories(type = 'topstories', limit = 100) {
+  static async getStories(type = "topstories", limit = 100) {
     try {
       const response = await fetch(`${API_BASE}/${type}.json`);
       const ids = await response.json();
@@ -103,11 +104,13 @@ class HackerNewsAPI {
   static async getItem(id) {
     // 首先尝试从数据库获取
     let article = await this.getArticleFromDB(id);
-    
+
     if (article) {
       // 如果数据库中有AI摘要，也一并返回
       try {
-        const summaryResponse = await fetch(`${DB_API_BASE}/api/ai-summary/${id}`);
+        const summaryResponse = await fetch(
+          `${DB_API_BASE}/api/ai-summary/${id}`,
+        );
         if (summaryResponse.ok) {
           const summaryData = await summaryResponse.json();
           article.ai_summary = summaryData.summary;
@@ -117,15 +120,15 @@ class HackerNewsAPI {
       } catch (error) {
         console.warn(`Could not fetch AI summary for ${id}:`, error);
       }
-      
+
       return article;
     }
-    
+
     // 如果数据库中没有，则从Hacker News API获取
     try {
       const response = await fetch(`${API_BASE}/item/${id}.json`);
       article = await response.json();
-      
+
       if (article) {
         // 保存到数据库
         try {
@@ -134,7 +137,7 @@ class HackerNewsAPI {
           console.warn(`Could not save article ${id} to database:`, saveError);
         }
       }
-      
+
       return article;
     } catch (error) {
       console.error(`Error fetching item ${id}:`, error);
@@ -160,20 +163,20 @@ class HackerNewsAPI {
   static async saveArticleToDB(article) {
     try {
       const response = await fetch(`${DB_API_BASE}/api/article`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(article)
+        body: JSON.stringify(article),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
-      console.error('Error saving article to database:', error);
+      console.error("Error saving article to database:", error);
       throw error;
     }
   }
@@ -182,20 +185,20 @@ class HackerNewsAPI {
   static async saveAISummaryToDB(articleId, summary, model) {
     try {
       const response = await fetch(`${DB_API_BASE}/api/ai-summary`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ articleId, summary, model })
+        body: JSON.stringify({ articleId, summary, model }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       return await response.json();
     } catch (error) {
-      console.error('Error saving AI summary to database:', error);
+      console.error("Error saving AI summary to database:", error);
       throw error;
     }
   }
@@ -205,14 +208,16 @@ class HackerNewsAPI {
     // 对于已缓存的文章，我们直接从数据库快速获取
     const uncachedIds = [];
     const results = [];
-    
+
     // 首先检查哪些文章已缓存
     for (const id of ids) {
       const cached = await this.getArticleFromDB(id);
       if (cached) {
         // 为缓存文章也获取AI摘要
         try {
-          const summaryResponse = await fetch(`${DB_API_BASE}/api/ai-summary/${id}`);
+          const summaryResponse = await fetch(
+            `${DB_API_BASE}/api/ai-summary/${id}`,
+          );
           if (summaryResponse.ok) {
             const summaryData = await summaryResponse.json();
             cached.ai_summary = summaryData.summary;
@@ -222,26 +227,26 @@ class HackerNewsAPI {
         } catch (error) {
           console.warn(`Could not fetch AI summary for ${id}:`, error);
         }
-        
+
         results.push(cached);
       } else {
         uncachedIds.push(id);
       }
     }
-    
+
     // 对于未缓存的文章，从Hacker News API获取
     if (uncachedIds.length > 0) {
-      const promises = uncachedIds.map(id => this.getItem(id));
+      const promises = uncachedIds.map((id) => this.getItem(id));
       const newItems = await Promise.allSettled(promises);
-      
+
       // 过滤掉失败的项并添加到结果中
       const successfulNewItems = newItems
-        .filter(result => result.status === 'fulfilled' && result.value)
-        .map(result => result.value);
-        
+        .filter((result) => result.status === "fulfilled" && result.value)
+        .map((result) => result.value);
+
       results.push(...successfulNewItems);
     }
-    
+
     return results;
   }
 }
@@ -249,17 +254,17 @@ class HackerNewsAPI {
 // 文章显示组件
 class ArticleRenderer {
   static renderArticle(article) {
-    if (!article || !article.title) return '';
-    
+    if (!article || !article.title) return "";
+
     const score = article.score || 0;
     const time = this.formatTime(article.time);
-    const url = article.url || '#';
-    const domain = url ? this.extractDomain(url) : '';
+    const url = article.url || "#";
+    const domain = url ? this.extractDomain(url) : "";
     const commentsCount = article.descendants || 0;
-    
+
     const typeClass = this.getTypeClass(article.type);
     const typeLabel = this.getTypeLabel(article.type);
-    
+
     return `
       <div class="article-card frosted-glass dual-stroke bg-white/60 rounded-[16px] p-3 shadow-md">
         <div class="flex items-start">
@@ -274,7 +279,7 @@ class ArticleRenderer {
                     ${this.escapeHtml(article.title)}
                   </a>
                 </h3>
-                ${domain ? `<p class="text-gray-500 text-xs mb-1 truncate">${this.escapeHtml(domain)}</p>` : ''}
+                ${domain ? `<p class="text-gray-500 text-xs mb-1 truncate">${this.escapeHtml(domain)}</p>` : ""}
                 <div class="flex items-center text-xs text-gray-600 space-x-2">
                   <span class="flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -298,38 +303,50 @@ class ArticleRenderer {
                     ${typeLabel}
                   </span>
                 </div>
-                ${article.text ? `
+                ${
+                  article.text
+                    ? `
                   <div class="mt-1 text-gray-700 text-xs">
                     <p class="line-clamp-2">${this.truncateText(this.stripHtml(article.text), 120)}</p>
                   </div>
-                ` : ''}
-                ${article.by ? `
+                `
+                    : ""
+                }
+                ${
+                  article.by
+                    ? `
                   <div class="mt-1 flex items-center">
                     <span class="text-xs text-gray-600">
                       by <span class="font-semibold text-gray-800 truncate max-w-[80px]">${this.escapeHtml(article.by)}</span>
                     </span>
                   </div>
-                ` : ''}
+                `
+                    : ""
+                }
               </div>
               <button 
                 class="ai-summary-btn ml-3 px-2 py-1 dual-stroke bg-white/70 rounded text-[0.6rem] font-medium text-gray-700 active:scale-[0.98] transition-transform duration-200"
                 data-article-id="${article.id}"
-                ${!openAIConfig.api_key ? 'disabled title="OpenAI API key not configured"' : ''}
+                ${!openAIConfig.api_key ? 'disabled title="OpenAI API key not configured"' : ""}
               >
-                ${!openAIConfig.api_key ? 'Config Needed' : article.ai_summary ? 'Regenerate' : 'AI Summary'}
+                ${!openAIConfig.api_key ? "Config Needed" : article.ai_summary ? "Regenerate" : "AI Summary"}
               </button>
             </div>
-            <div id="ai-summary-${article.id}" class="ai-summary-content ${article.ai_summary ? '' : 'hidden'} mt-2 p-2 bg-gray-100/50 rounded-lg text-xs text-gray-700">
-              ${article.ai_summary ? `
+            <div id="ai-summary-${article.id}" class="ai-summary-content ${article.ai_summary ? "" : "hidden"} mt-2 p-2 bg-gray-100/50 rounded-lg text-xs text-gray-700">
+              ${
+                article.ai_summary
+                  ? `
                 <div class="font-semibold mb-1 flex items-center">
                   <svg class="w-3 h-3 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
                   </svg>
                   AI Summary
                 </div>
-                <div class="ai-summary-text">${this.formatSummaryAsHTML(article.ai_summary)}</div>
+                <div class="ai-summary-text">${ArticleRenderer.formatSummaryAsHTML(article.ai_summary)}</div>
                 <div class="mt-2 text-[0.5rem] text-gray-500 italic">Generated by ${article.summary_model || openAIConfig.model}</div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           </div>
         </div>
@@ -339,25 +356,25 @@ class ArticleRenderer {
 
   static getTypeClass(type) {
     switch (type) {
-      case 'story':
-        return 'bg-blue-500';
-      case 'job':
-        return 'bg-green-500';
-      case 'ask_hn':
-        return 'bg-purple-500';
-      case 'poll':
-        return 'bg-yellow-500';
+      case "story":
+        return "bg-blue-500";
+      case "job":
+        return "bg-green-500";
+      case "ask_hn":
+        return "bg-purple-500";
+      case "poll":
+        return "bg-yellow-500";
       default:
-        return 'bg-gray-500';
+        return "bg-gray-500";
     }
   }
 
   static getTypeLabel(type) {
     switch (type) {
-      case 'ask_hn':
-        return 'Ask HN';
-      case 'show_hn':
-        return 'Show HN';
+      case "ask_hn":
+        return "Ask HN";
+      case "show_hn":
+        return "Show HN";
       default:
         return type.charAt(0).toUpperCase() + type.slice(1);
     }
@@ -366,41 +383,91 @@ class ArticleRenderer {
   static formatTime(timestamp) {
     const now = Date.now() / 1000;
     const diff = now - timestamp;
-    
-    if (diff < 60) return 'just now';
+
+    if (diff < 60) return "just now";
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     if (diff < 2592000) return `${Math.floor(diff / 86400)}d ago`;
-    
+
     return new Date(timestamp * 1000).toLocaleDateString();
   }
 
   static extractDomain(url) {
     try {
-      const domain = new URL(url).hostname.replace('www.', '');
+      const domain = new URL(url).hostname.replace("www.", "");
       return domain;
     } catch {
-      return '';
+      return "";
     }
   }
 
   static escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
+    if (!text) return "";
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
 
   static stripHtml(html) {
-    if (!html) return '';
-    const div = document.createElement('div');
+    if (!html) return "";
+    const div = document.createElement("div");
     div.innerHTML = html;
-    return div.textContent || div.innerText || '';
+    return div.textContent || div.innerText || "";
   }
 
   static truncateText(text, maxLength) {
-    if (!text) return '';
-    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    if (!text) return "";
+    return text.length > maxLength
+      ? text.substring(0, maxLength) + "..."
+      : text;
+  }
+
+  static formatSummaryAsHTML(summary) {
+    // 将AI返回的摘要转换为HTML格式，支持markdown格式
+    if (!summary) return "";
+
+    // 处理markdown格式的粗体和斜体
+    let html = summary
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // **bold**
+      .replace(/\*(.*?)\*/g, "<em>$1</em>") // *italic*
+      .replace(/__(.*?)__/g, "<strong>$1</strong>") // __bold__
+      .replace(/_(.*?)_/g, "<em>$1</em>"); // _italic_
+
+    // 按行分割并处理列表项
+    return html
+      .split("\n")
+      .map((line) => {
+        line = line.trim();
+        if (!line) return '<div class="my-1"><br></div>'; // 空行
+
+        // 检查是否是列表项
+        if (
+          line.startsWith("- ") ||
+          line.startsWith("* ") ||
+          /^\d+\./.test(line)
+        ) {
+          return `<div class="ml-2 my-1">• ${line.substring(2).replace(/^\d+\.\s*/, "")}</div>`;
+        }
+
+        // 检查是否是标题
+        if (line.startsWith("# ")) {
+          return `<h3 class="font-bold text-sm mt-2 mb-1">${line.substring(2)}</h3>`;
+        } else if (line.startsWith("## ")) {
+          return `<h4 class="font-bold text-xs mt-2 mb-1">${line.substring(3)}</h4>`;
+        }
+
+        // 检查是否包含链接
+        const linkRegex = /(https?:\/\/[^\s]+)/g;
+        if (linkRegex.test(line)) {
+          line = line.replace(
+            linkRegex,
+            '<a href="$1" target="_blank" class="text-blue-500 hover:underline">$1</a>',
+          );
+        }
+
+        return `<div class="my-1">${line}</div>`;
+      })
+      .join("");
   }
 }
 
@@ -409,79 +476,84 @@ class HackerNewsApp {
   constructor() {
     this.articles = [];
     this.filteredArticles = [];
-    this.currentFilter = 'all';
-    this.currentSearch = '';
+    this.currentFilter = "all";
+    this.currentSearch = "";
     this.articlesPerPage = 20;
     this.currentPage = 0;
-    
+
     this.initializeElements();
     this.bindEvents();
     this.loadInitialData();
   }
 
   initializeElements() {
-    this.searchInput = document.getElementById('searchInput');
-    this.searchBtn = document.getElementById('searchBtn');
-    this.articlesContainer = document.getElementById('articlesContainer');
-    this.loadingElement = document.getElementById('loading');
-    this.loadMoreContainer = document.getElementById('loadMoreContainer');
-    this.loadMoreBtn = document.getElementById('loadMoreBtn');
-    this.filterButtons = document.querySelectorAll('.filter-btn');
+    this.searchInput = document.getElementById("searchInput");
+    this.searchBtn = document.getElementById("searchBtn");
+    this.articlesContainer = document.getElementById("articlesContainer");
+    this.loadingElement = document.getElementById("loading");
+    this.loadMoreContainer = document.getElementById("loadMoreContainer");
+    this.loadMoreBtn = document.getElementById("loadMoreBtn");
+    this.filterButtons = document.querySelectorAll(".filter-btn");
   }
 
   bindEvents() {
-    this.searchBtn.addEventListener('click', () => this.performSearch());
-    this.searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
+    this.searchBtn.addEventListener("click", () => this.performSearch());
+    this.searchInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
         this.performSearch();
       }
     });
-    
-    this.loadMoreBtn.addEventListener('click', () => this.loadMore());
-    
-    this.filterButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.filterButtons.forEach(b => b.classList.remove('bg-[#1C1C1E]', 'text-white'));
-        btn.classList.add('bg-[#1C1C1E]', 'text-white');
+
+    this.loadMoreBtn.addEventListener("click", () => this.loadMore());
+
+    this.filterButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        this.filterButtons.forEach((b) =>
+          b.classList.remove("bg-[#1C1C1E]", "text-white"),
+        );
+        btn.classList.add("bg-[#1C1C1E]", "text-white");
         this.currentFilter = btn.dataset.type;
         this.applyFilters();
       });
     });
-    
+
     // 为AI总结按钮添加事件委托
-    this.articlesContainer.addEventListener('click', async (e) => {
-      if (e.target.classList.contains('ai-summary-btn')) {
+    this.articlesContainer.addEventListener("click", async (e) => {
+      if (e.target.classList.contains("ai-summary-btn")) {
         const articleId = e.target.dataset.articleId;
         await this.handleAISummary(articleId);
       }
     });
   }
-  
+
   async handleAISummary(articleId) {
     const btn = document.querySelector(`[data-article-id="${articleId}"]`);
     const summaryContainer = document.getElementById(`ai-summary-${articleId}`);
-    
+
     if (!btn || !summaryContainer) return;
-    
+
     // 防止重复点击
-    if (btn.disabled || summaryContainer.classList.contains('loading')) return;
-    
+    if (btn.disabled || summaryContainer.classList.contains("loading")) return;
+
     try {
       // 显示加载状态
       btn.disabled = true;
-      btn.textContent = '...';
-      summaryContainer.classList.remove('hidden');
-      summaryContainer.classList.add('loading');
-      summaryContainer.innerHTML = '<div class="text-blue-500">Generating AI summary...</div>';
-      
+      btn.textContent = "...";
+      summaryContainer.classList.remove("hidden");
+      summaryContainer.classList.add("loading");
+      summaryContainer.innerHTML =
+        '<div class="text-blue-500">Generating AI summary...</div>';
+
       // 首先检查数据库中是否已有AI摘要
       let summary = null;
       try {
-        const summaryResponse = await fetch(`${DB_API_BASE}/api/ai-summary/${articleId}`);
+        const summaryResponse = await fetch(
+          `${DB_API_BASE}/api/ai-summary/${articleId}`,
+        );
         if (summaryResponse.ok) {
           const summaryData = await summaryResponse.json();
           summary = summaryData.summary;
-          
+
           // 如果数据库中有摘要，直接使用
           summaryContainer.innerHTML = `
             <div class="font-semibold mb-1 flex items-center">
@@ -490,79 +562,97 @@ class HackerNewsApp {
               </svg>
               AI Summary (from cache)
             </div>
-            <div class="ai-summary-text">${this.formatSummaryAsHTML(summary)}</div>
+            <div class="ai-summary-text">${ArticleRenderer.formatSummaryAsHTML(summary)}</div>
             <div class="mt-2 text-[0.5rem] text-gray-500 italic">Generated by ${summaryData.model}</div>
           `;
-          
+
           // 更新按钮状态
-          btn.textContent = 'AI Summary';
-          btn.classList.add('text-green-600');
+          btn.textContent = "AI Summary";
+          btn.classList.add("text-green-600");
           return;
         }
       } catch (dbError) {
-        console.warn('Could not fetch cached summary, will generate new one:', dbError);
+        console.warn(
+          "Could not fetch cached summary, will generate new one:",
+          dbError,
+        );
       }
-      
+
       // 获取文章详细信息
-      let article = this.articles.find(a => a.id == articleId);
-      
+      let article = this.articles.find((a) => a.id == articleId);
+
       // 如果没有在内存中找到，尝试从数据库获取
       if (!article) {
         article = await HackerNewsAPI.getArticleFromDB(articleId);
       }
-      
+
       if (!article) {
-        throw new Error('Article not found');
+        throw new Error("Article not found");
       }
-      
+
       // 使用API获取文章内容
-      let content = article.text || '';
-      
+      let content = article.text || "";
+
       // 如果没有内容但有URL，尝试从URL获取实际内容
       if (!content && article.url) {
         try {
           // 显示获取URL内容的进度
-          summaryContainer.innerHTML = '<div class="text-blue-500">Fetching content from URL...</div>';
-          
+          summaryContainer.innerHTML =
+            '<div class="text-blue-500">Fetching content from URL...</div>';
+
           // 调用后端API从URL获取内容
-          const urlContentResponse = await fetch(`${DB_API_BASE}/api/url-content?url=${encodeURIComponent(article.url)}`);
-          
+          const urlContentResponse = await fetch(
+            `${DB_API_BASE}/api/url-content?url=${encodeURIComponent(article.url)}`,
+          );
+
           if (urlContentResponse.ok) {
             const urlContentData = await urlContentResponse.json();
             content = urlContentData.content;
-            
+
             // 确保内容不是太长，如果太长则截断
-            if (content.length > 10000) { // 限制为10000字符
-              content = content.substring(0, 10000) + '... [Content truncated due to length]';
+            if (content.length > 10000) {
+              // 限制为10000字符
+              content =
+                content.substring(0, 10000) +
+                "... [Content truncated due to length]";
             }
           } else {
             // 如果获取URL内容失败，使用原文URL和标题作为fallback
             const errorData = await urlContentResponse.json();
-            console.warn(`Failed to fetch content from URL: ${errorData.error}`);
+            console.warn(
+              `Failed to fetch content from URL: ${errorData.error}`,
+            );
             content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
           }
         } catch (urlError) {
-          console.warn('Could not fetch content from URL, using fallback:', urlError);
+          console.warn(
+            "Could not fetch content from URL, using fallback:",
+            urlError,
+          );
           // 如果获取URL内容失败，使用原文URL和标题作为fallback
           content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
         }
       }
-      
+
       // 如果仍然没有内容，使用标题
       if (!content) {
         content = `Title: ${article.title}. No content available.`;
       }
-      
+
       // 调用OpenAI API获取摘要
       summary = await OpenAIClient.getArticleSummary(content, article.title);
-      
+
       // 保存AI摘要到数据库
       try {
-        await HackerNewsAPI.saveAISummaryToDB(articleId, summary, openAIConfig.model);
+        await HackerNewsAPI.saveAISummaryToDB(
+          articleId,
+          summary,
+          openAIConfig.model,
+        );
       } catch (saveError) {
-        console.error('Could not save AI summary to database:', saveError);
+        console.error("Could not save AI summary to database:", saveError);
       }
-      
+
       // 显示摘要
       summaryContainer.innerHTML = `
         <div class="font-semibold mb-1 flex items-center">
@@ -571,70 +661,76 @@ class HackerNewsApp {
           </svg>
           AI Summary
         </div>
-        <div class="ai-summary-text">${this.formatSummaryAsHTML(summary)}</div>
+        <div class="ai-summary-text">${ArticleRenderer.formatSummaryAsHTML(summary)}</div>
         <div class="mt-2 text-[0.5rem] text-gray-500 italic">Generated by ${openAIConfig.model}</div>
       `;
-      
+
       // 更新按钮状态
-      btn.textContent = 'Regenerate';
-      btn.classList.add('text-green-600');
-      
+      btn.textContent = "Regenerate";
+      btn.classList.add("text-green-600");
     } catch (error) {
-      console.error('Error generating AI summary:', error);
+      console.error("Error generating AI summary:", error);
       summaryContainer.innerHTML = `<div class="text-red-500 text-xs">Error: ${error.message}</div>`;
-      btn.textContent = 'AI Summary';
-      
+      btn.textContent = "AI Summary";
+
       // 如果是API密钥问题，提示用户检查配置
-      if (error.message.includes('API key')) {
+      if (error.message.includes("API key")) {
         btn.disabled = true;
-        btn.title = 'OpenAI API key not configured';
-        btn.textContent = 'Config Needed';
+        btn.title = "OpenAI API key not configured";
+        btn.textContent = "Config Needed";
       } else {
         btn.disabled = false;
       }
     } finally {
       btn.disabled = false;
-      summaryContainer.classList.remove('loading');
+      summaryContainer.classList.remove("loading");
     }
   }
-  
+
   formatSummaryAsHTML(summary) {
     // 将AI返回的摘要转换为HTML格式，特别是处理项目符号
     return summary
-      .split('\n')
-      .map(line => {
+      .split("\n")
+      .map((line) => {
         // 检查是否是列表项
-        if (line.trim().startsWith('- ') || line.trim().startsWith('* ') || /^\d+\./.test(line.trim())) {
-          return `<div class="ml-2">• ${line.trim().substring(2).replace(/^\d+\.\s*/, '')}</div>`;
+        if (
+          line.trim().startsWith("- ") ||
+          line.trim().startsWith("* ") ||
+          /^\d+\./.test(line.trim())
+        ) {
+          return `<div class="ml-2">• ${line
+            .trim()
+            .substring(2)
+            .replace(/^\d+\.\s*/, "")}</div>`;
         }
         return `<div>${line}</div>`;
       })
-      .join('');
+      .join("");
   }
 
   async loadInitialData() {
     this.showLoading();
     try {
       // 获取前100个热门文章ID
-      const topIds = await HackerNewsAPI.getStories('topstories', 100);
+      const topIds = await HackerNewsAPI.getStories("topstories", 100);
       // 获取前50个新文章ID
-      const newIds = await HackerNewsAPI.getStories('newstories', 50);
+      const newIds = await HackerNewsAPI.getStories("newstories", 50);
       // 获取前50个最佳文章ID
-      const bestIds = await HackerNewsAPI.getStories('beststories', 50);
-      
+      const bestIds = await HackerNewsAPI.getStories("beststories", 50);
+
       // 合并所有ID并去重
       const allIds = [...new Set([...topIds, ...newIds, ...bestIds])];
-      
+
       // 获取文章详情
       this.articles = await HackerNewsAPI.getItems(allIds);
       this.filteredArticles = this.articles;
-      
+
       // 按时间排序（最新的在前）
       this.filteredArticles.sort((a, b) => (b.time || 0) - (a.time || 0));
-      
+
       this.renderArticles();
     } catch (error) {
-      console.error('Error loading initial data:', error);
+      console.error("Error loading initial data:", error);
     } finally {
       this.hideLoading();
     }
@@ -643,9 +739,9 @@ class HackerNewsApp {
   performSearch() {
     const searchTerm = this.searchInput.value.trim().toLowerCase();
     this.currentSearch = searchTerm;
-    
+
     this.showLoading();
-    
+
     // 异步执行搜索以避免阻塞UI
     setTimeout(() => {
       this.applyFilters();
@@ -655,50 +751,58 @@ class HackerNewsApp {
 
   applyFilters() {
     let results = this.articles;
-    
+
     // 应用类型过滤
-    if (this.currentFilter !== 'all') {
-      const filterType = this.currentFilter === 'ask_hn' ? 'story' : this.currentFilter;
-      results = results.filter(article => {
-        if (this.currentFilter === 'ask_hn') {
-          return article.type === 'story' && 
-                 (article.title.toLowerCase().includes('ask hn') ||
-                  (article.text && article.text.toLowerCase().includes('ask hn')));
+    if (this.currentFilter !== "all") {
+      const filterType =
+        this.currentFilter === "ask_hn" ? "story" : this.currentFilter;
+      results = results.filter((article) => {
+        if (this.currentFilter === "ask_hn") {
+          return (
+            article.type === "story" &&
+            (article.title.toLowerCase().includes("ask hn") ||
+              (article.text && article.text.toLowerCase().includes("ask hn")))
+          );
         }
         return article.type === filterType;
       });
     }
-    
+
     // 应用搜索关键词过滤
     if (this.currentSearch) {
-      const searchTerms = this.currentSearch.toLowerCase().split(' ');
-      results = results.filter(article => {
+      const searchTerms = this.currentSearch.toLowerCase().split(" ");
+      results = results.filter((article) => {
         if (!article.title) return false;
-        
+
         const title = article.title.toLowerCase();
-        const text = article.text ? this.stripHtml(article.text).toLowerCase() : '';
-        
-        return searchTerms.some(term => 
-          title.includes(term) || text.includes(term)
+        const text = article.text
+          ? this.stripHtml(article.text).toLowerCase()
+          : "";
+
+        return searchTerms.some(
+          (term) => title.includes(term) || text.includes(term),
         );
       });
     }
-    
+
     this.filteredArticles = results;
     this.currentPage = 0;
-    
+
     // 按时间排序（最新的在前）
     this.filteredArticles.sort((a, b) => (b.time || 0) - (a.time || 0));
-    
+
     this.renderArticles();
     this.updateLoadMoreButton();
   }
 
   renderArticles() {
     const startIndex = this.currentPage * this.articlesPerPage;
-    const endIndex = Math.min(startIndex + this.articlesPerPage, this.filteredArticles.length);
+    const endIndex = Math.min(
+      startIndex + this.articlesPerPage,
+      this.filteredArticles.length,
+    );
     const articlesToShow = this.filteredArticles.slice(startIndex, endIndex);
-    
+
     if (articlesToShow.length === 0) {
       this.articlesContainer.innerHTML = `
         <div class="text-center py-6">
@@ -713,9 +817,11 @@ class HackerNewsApp {
       `;
       return;
     }
-    
-    const articlesHTML = articlesToShow.map(article => ArticleRenderer.renderArticle(article)).join('');
-    
+
+    const articlesHTML = articlesToShow
+      .map((article) => ArticleRenderer.renderArticle(article))
+      .join("");
+
     if (this.currentPage === 0) {
       this.articlesContainer.innerHTML = articlesHTML;
     } else {
@@ -732,27 +838,27 @@ class HackerNewsApp {
   updateLoadMoreButton() {
     const totalLoaded = (this.currentPage + 1) * this.articlesPerPage;
     const hasMore = totalLoaded < this.filteredArticles.length;
-    
-    this.loadMoreContainer.classList.toggle('hidden', !hasMore);
+
+    this.loadMoreContainer.classList.toggle("hidden", !hasMore);
   }
 
   showLoading() {
-    this.loadingElement.classList.remove('hidden');
+    this.loadingElement.classList.remove("hidden");
   }
 
   hideLoading() {
-    this.loadingElement.classList.add('hidden');
+    this.loadingElement.classList.add("hidden");
   }
 
   stripHtml(html) {
-    if (!html) return '';
-    const div = document.createElement('div');
+    if (!html) return "";
+    const div = document.createElement("div");
     div.innerHTML = html;
-    return div.textContent || div.innerText || '';
+    return div.textContent || div.innerText || "";
   }
 }
 
 // 初始化应用
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   new HackerNewsApp();
 });
