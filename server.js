@@ -5,6 +5,7 @@ const { JSDOM } = require('jsdom');
 
 // 使用 node-fetch v3 的方式
 const { default: fetch } = require('node-fetch');
+const puppeteer = require('puppeteer');
 const app = express();
 const PORT = 3000;
 
@@ -153,6 +154,69 @@ app.post('/api/generate-summary', async (req, res) => {
   } catch (error) {
     console.error('Error generating summary:', error);
     res.status(500).json({ error: `Failed to generate summary: ${error.message}` });
+  }
+});
+
+// API endpoint to get content from URL with Puppeteer (for JavaScript-heavy sites)
+app.get('/api/render-url-content', async (req, res) => {
+  try {
+    const { url } = req.query;
+    
+    // Validate URL
+    if (!url) {
+      return res.status(400).json({ error: 'URL parameter is required' });
+    }
+    
+    // Basic URL validation to prevent access to local resources
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return res.status(400).json({ error: 'Invalid protocol, only http and https are allowed' });
+      }
+    } catch (_urlError) {
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
+    
+    // Launch puppeteer browser
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    
+    // Set a realistic user agent
+    await page.setUserAgent('Mozilla/5.0 (compatible; HackerNewsBot/1.0)');
+    
+    try {
+      // Navigate to the URL and wait for network to be idle
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 30000 // 30 second timeout
+      });
+      
+      // Extract the text content from the page after JavaScript execution
+      const content = await page.evaluate(() => {
+        // Remove script and style elements to avoid extracting their content
+        const scripts = document.querySelectorAll('script, style, noscript');
+        scripts.forEach(el => el.remove());
+        
+        // Get the text content
+        return document.body ? document.body.innerText : document.documentElement.innerText;
+      });
+      
+      await browser.close();
+      
+      res.json({ content, url: url });
+      
+    } catch (navError) {
+      await browser.close();
+      console.error('Puppeteer navigation error:', navError);
+      return res.status(400).json({ error: `Failed to load URL: ${navError.message}` });
+    }
+    
+  } catch (error) {
+    console.error('Error in render-url-content:', error);
+    res.status(500).json({ error: `Failed to render URL content: ${error.message}` });
   }
 });
 

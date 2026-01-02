@@ -577,22 +577,12 @@ class HackerNewsApp {
           summaryContainer.innerHTML =
             '<div class="text-blue-500">Fetching content from URL...</div>';
 
-          // 从前端直接从URL获取内容，利用浏览器代理
-          const response = await fetch(article.url);
+          // 使用后端无头浏览器API获取内容，可以处理JavaScript渲染的页面
+          const response = await fetch(`${DB_API_BASE}/api/render-url-content?url=${encodeURIComponent(article.url)}`);
           
           if (response.ok) {
-            const html = await response.text();
-            
-            // 解析HTML并提取文本内容
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            
-            // 移除script和style元素以避免提取它们的内容
-            const scripts = doc.querySelectorAll('script, style, noscript');
-            scripts.forEach(el => el.remove());
-            
-            // 获取文本内容
-            content = doc.body ? doc.body.textContent : doc.textContent;
+            const data = await response.json();
+            content = data.content;
             
             // 清理文本内容
             content = content
@@ -607,11 +597,43 @@ class HackerNewsApp {
                 "... [Content truncated due to length]";
             }
           } else {
-            // 如果获取URL内容失败，使用原文URL和标题作为fallback
+            // 如果获取URL内容失败，回退到原来的实现
             console.warn(
-              `Failed to fetch content from URL: ${response.status} ${response.statusText}`,
+              `Failed to fetch content with puppeteer, trying direct fetch: ${response.status} ${response.statusText}`
             );
-            content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
+            
+            // 回退到原来的直接fetch方式
+            const directResponse = await fetch(article.url);
+            if (directResponse.ok) {
+              const html = await directResponse.text();
+              
+              // 解析HTML并提取文本内容
+              const parser = new DOMParser();
+              const doc = parser.parseFromString(html, 'text/html');
+              
+              // 移除script和style元素以避免提取它们的内容
+              const scripts = doc.querySelectorAll('script, style, noscript');
+              scripts.forEach(el => el.remove());
+              
+              // 获取文本内容
+              content = doc.body ? doc.body.textContent : doc.textContent;
+              
+              // 清理文本内容
+              content = content
+                .replace(/\s+/g, ' ') // 将多个空白字符替换为单个空格
+                .trim();
+              
+              // 确保内容不是太长，如果太长则截断
+              if (content.length > 10000) {
+                // 限制为10000字符
+                content =
+                  content.substring(0, 10000) +
+                  "... [Content truncated due to length]";
+              }
+            } else {
+              // 如果获取URL内容失败，使用原文URL和标题作为fallback
+              content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
+            }
           }
         } catch (urlError) {
           console.warn(
