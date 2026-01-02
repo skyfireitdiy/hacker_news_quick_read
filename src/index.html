@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -66,7 +66,15 @@
             Hacker News Reader
           </h1>
           <p class="text-gray-600 text-sm font-medium">
-            Browse and filter the latest tech stories
+            浏览和筛选最新的科技新闻
+          </p>
+          <p class="text-gray-500 text-xs mt-1">
+            网站由<a
+              href="https://github.com/skyfireitdiy/Jarvis"
+              class="text-blue-500 hover:underline"
+              target="_blank"
+              >Jarvis</a
+            >生成
           </p>
         </div>
       </header>
@@ -96,15 +104,15 @@
             <input
               type="text"
               id="searchInput"
-              placeholder="Search articles by keyword..."
+              placeholder="通过关键词搜索文章..."
               class="w-full bg-transparent border-none focus:ring-0 ml-2 py-1.5 text-base placeholder-gray-500"
               autocomplete="off"
             />
             <button
               id="searchBtn"
-              class="ml-3 px-4 py-1.5 bg-[#1C1C1E] text-white font-semibold rounded-lg text-sm active:scale-[0.98] transition-transform duration-200"
+              class="ml-3 px-4 py-1.5 bg-[#1C1C1E] text-white font-semibold rounded-lg text-sm active:scale-[0.98] transition-transform duration-200 min-w-[60px]"
             >
-              Search
+              搜索
             </button>
           </div>
         </div>
@@ -114,31 +122,31 @@
             class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
             data-type="all"
           >
-            All
+            全部
           </button>
           <button
             class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
             data-type="story"
           >
-            Stories
+            文章
           </button>
           <button
             class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
             data-type="job"
           >
-            Jobs
+            招聘
           </button>
           <button
             class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
             data-type="ask_hn"
           >
-            Ask HN
+            问答
           </button>
           <button
             class="filter-btn px-3 py-1.5 dual-stroke bg-white/70 rounded-lg font-medium text-xs text-gray-700 active:scale-[0.98] transition-transform duration-200"
             data-type="poll"
           >
-            Polls
+            投票
           </button>
         </div>
       </section>
@@ -148,7 +156,7 @@
         <div
           class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"
         ></div>
-        <p class="mt-4 text-gray-700 font-medium">Loading articles...</p>
+        <p class="mt-4 text-gray-700 font-medium">正在加载文章...</p>
       </div>
 
       <!-- Articles Container -->
@@ -165,7 +173,7 @@
           id="loadMoreBtn"
           class="px-6 py-2 dual-stroke bg-white/70 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform duration-200"
         >
-          Load More
+          加载更多
         </button>
       </div>
     </div>

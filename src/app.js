@@ -958,7 +958,12 @@ class HackerNewsApp {
     const totalLoaded = (this.currentPage + 1) * this.articlesPerPage;
     const hasMore = totalLoaded < this.filteredArticles.length;
 
-    this.loadMoreContainer.classList.toggle("hidden", !hasMore);
+    // 修正：确保按钮的显示逻辑正确
+    if (hasMore) {
+      this.loadMoreContainer.classList.remove("hidden");
+    } else {
+      this.loadMoreContainer.classList.add("hidden");
+    }
   }
 
   showLoading() {
