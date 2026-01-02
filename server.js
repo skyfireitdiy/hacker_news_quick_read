@@ -1,6 +1,10 @@
 const express = require('express');
 const path = require('path');
 const Database = require('./database');
+const { JSDOM } = require('jsdom');
+
+// 使用 node-fetch v3 的方式
+const { default: fetch } = require('node-fetch');
 const app = express();
 const PORT = 3000;
 
@@ -76,6 +80,74 @@ app.get('/api/ai-summary/:articleId', async (req, res) => {
   } catch (error) {
     console.error('Error fetching AI summary:', error);
     res.status(500).json({ error: 'Failed to fetch AI summary' });
+  }
+});
+
+// API endpoint to get content from URL
+app.get('/api/url-content', async (req, res) => {
+  try {
+    const { url } = req.query;
+    
+    // Validate URL
+    if (!url) {
+      return res.status(400).json({ error: 'URL parameter is required' });
+    }
+    
+    // Basic URL validation to prevent access to local resources
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return res.status(400).json({ error: 'Invalid protocol, only http and https are allowed' });
+      }
+    } catch (_urlError) { // eslint-disable-line no-unused-vars
+      return res.status(400).json({ error: 'Invalid URL format' });
+    }
+    
+    // Fetch the content
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; HackerNewsBot/1.0)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+      }
+    });
+    
+    if (!response.ok) {
+      // 尝试获取错误内容
+      let errorText = '';
+      try {
+        errorText = await response.text();
+      } catch (_e) { // eslint-disable-line no-unused-vars
+        // 忽略错误
+      }
+      return res.status(400).json({ error: `Failed to fetch URL: ${response.status} ${response.statusText}, details: ${errorText}` });
+    }
+    
+    const html = await response.text();
+    
+    // Parse HTML and extract text content
+    const dom = new JSDOM(html);
+    const document = dom.window.document;
+    
+    // Remove script and style elements to avoid extracting their content
+    const scripts = document.querySelectorAll('script, style, noscript');
+    scripts.forEach(el => el.remove());
+    
+    // Get the text content
+    let textContent = document.body ? document.body.textContent : document.textContent;
+    
+    // Clean up the text content
+    textContent = textContent
+      .replace(/\s+/g, ' ') // Replace multiple whitespaces with single space
+      .trim();
+    
+    res.json({ content: textContent, url: url });
+    
+  } catch (error) {
+    console.error('Error fetching URL content:', error);
+    res.status(500).json({ error: `Failed to fetch content from URL: ${error.message}` });
   }
 });
 

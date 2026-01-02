@@ -1,5 +1,5 @@
 const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const path = require('path'); // eslint-disable-line no-unused-vars
 
 class Database {
   constructor(dbPath = './hacker_news.db') {
@@ -145,7 +145,7 @@ class Database {
 
   // 保存AI摘要
   async saveAISummary(articleId, summary, model) {
-    const insertQuery = `INSERT INTO ai_summaries (article_id, summary, model) VALUES (?, ?, ?)`;
+    const insertQuery = 'INSERT INTO ai_summaries (article_id, summary, model) VALUES (?, ?, ?)';
     
     return new Promise((resolve, reject) => {
       this.db.run(insertQuery, [articleId, summary, model], function(err) {
