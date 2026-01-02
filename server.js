@@ -7,7 +7,7 @@ const { JSDOM } = require("jsdom");
 const { default: fetch } = require("node-fetch");
 const puppeteer = require("puppeteer");
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Initialize database
 const db = new Database();
@@ -270,11 +270,9 @@ app.get("/api/render-url-content", async (req, res) => {
           // eslint-disable-line no-unused-vars
           // 忽略错误
         }
-        return res
-          .status(400)
-          .json({
-            error: `Failed to fetch URL with fallback: ${response.status} ${response.statusText}, details: ${errorText}`,
-          });
+        return res.status(400).json({
+          error: `Failed to fetch URL with fallback: ${response.status} ${response.statusText}, details: ${errorText}`,
+        });
       }
 
       const html = await response.text();
@@ -301,11 +299,9 @@ app.get("/api/render-url-content", async (req, res) => {
       return; // Exit here
     } catch (fetchError) {
       console.error("Error in fallback fetch mechanism:", fetchError);
-      res
-        .status(500)
-        .json({
-          error: `Failed to render URL content with both Puppeteer and fetch: ${fetchError.message}`,
-        });
+      res.status(500).json({
+        error: `Failed to render URL content with both Puppeteer and fetch: ${fetchError.message}`,
+      });
       return;
     }
   } catch (error) {
@@ -360,11 +356,9 @@ app.get("/api/url-content", async (req, res) => {
         // eslint-disable-line no-unused-vars
         // 忽略错误
       }
-      return res
-        .status(400)
-        .json({
-          error: `Failed to fetch URL: ${response.status} ${response.statusText}, details: ${errorText}`,
-        });
+      return res.status(400).json({
+        error: `Failed to fetch URL: ${response.status} ${response.statusText}, details: ${errorText}`,
+      });
     }
 
     const html = await response.text();

@@ -1,0 +1,44 @@
+{
+  "name": "Hacker News Quick Reader",
+  "description": "A beautiful web application for browsing Hacker News articles with powerful search and filtering capabilities.",
+  "repository": "https://github.com/username/hacker-news-quick-read",
+  "logo": "https://node-js-sample.herokuapp.com/node.png",
+  "keywords": [
+    "hacker-news",
+    "api",
+    "frontend",
+    "javascript",
+    "tailwindcss",
+    "web-app",
+    "search",
+    "filtering"
+  ],
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "Your OpenAI API key",
+      "value": "",
+      "required": false
+    },
+    "OPENAI_BASE_URL": {
+      "description": "OpenAI API base URL",
+      "value": "https://api.openai.com/v1",
+      "required": false
+    },
+    "OPENAI_MODEL": {
+      "description": "OpenAI model to use",
+      "value": "gpt-3.5-turbo",
+      "required": false
+    },
+    "NPM_CONFIG_PRODUCTION": {
+      "value": "false"
+    }
+  },
+  "scripts": {
+    "postdeploy": "npm install"
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  }
+}
