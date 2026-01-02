@@ -339,7 +339,7 @@ app.post("/api/generate-summary", async (req, res) => {
 
     const summary = data.choices[0].message.content.trim();
 
-    res.json({ summary });
+    res.json({ summary, model: finalModel });
   } catch (error) {
     console.error("Error generating summary:", error);
     res
@@ -440,7 +440,6 @@ app.get("/api/render-url-content", async (req, res) => {
         try {
           errorText = await response.text();
         } catch (_e) {
-          // eslint-disable-line no-unused-vars
           // 忽略错误
         }
         return res.status(400).json({
@@ -504,7 +503,6 @@ app.get("/api/url-content", async (req, res) => {
           .json({ error: "Invalid protocol, only http and https are allowed" });
       }
     } catch (_urlError) {
-      // eslint-disable-line no-unused-vars
       return res.status(400).json({ error: "Invalid URL format" });
     }
 
@@ -526,7 +524,6 @@ app.get("/api/url-content", async (req, res) => {
       try {
         errorText = await response.text();
       } catch (_e) {
-        // eslint-disable-line no-unused-vars
         // 忽略错误
       }
       return res.status(400).json({
