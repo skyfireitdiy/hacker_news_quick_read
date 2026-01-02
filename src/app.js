@@ -623,10 +623,12 @@ class HackerNewsApp {
 
     this.filterButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
-        this.filterButtons.forEach((b) =>
-          b.classList.remove("bg-[#1C1C1E]", "text-white"),
-        );
-        btn.classList.add("bg-[#1C1C1E]", "text-white");
+        this.filterButtons.forEach((b) => {
+          b.classList.remove("bg-[#1C1C1E]", "text-white", "selected");
+          b.classList.add("bg-white/70", "text-gray-700");
+        });
+        btn.classList.remove("bg-white/70", "text-gray-700");
+        btn.classList.add("selected");
         this.currentFilter = btn.dataset.type;
         this.applyFilters();
       });
