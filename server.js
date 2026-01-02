@@ -12,6 +12,84 @@ const PORT = process.env.PORT || 3000;
 // Initialize database
 const db = new Database();
 
+// Function to fetch and save articles from Hacker News API
+async function fetchHackerNewsArticles() {
+  try {
+    console.log(
+      `${new Date().toISOString()} - Starting to fetch new articles from Hacker News...`,
+    );
+
+    // Fetch top stories IDs
+    const topStoriesResponse = await fetch(
+      "https://hacker-news.firebaseio.com/v0/topstories.json",
+    );
+    const topStoriesIds = await topStoriesResponse.json();
+
+    if (!topStoriesIds || !Array.isArray(topStoriesIds)) {
+      console.error("Failed to fetch top stories IDs or received invalid data");
+      return;
+    }
+
+    // Limit to top 200 articles to get more coverage
+    const limitedIds = topStoriesIds.slice(0, 200);
+
+    // Fetch individual articles
+    const articlePromises = limitedIds.map(async (id) => {
+      try {
+        // Check if article already exists in database
+        const exists = await db.articleExists(id);
+        if (exists) {
+          return null; // Skip if already exists
+        }
+
+        const response = await fetch(
+          `https://hacker-news.firebaseio.com/v0/item/${id}.json`,
+        );
+
+        if (!response.ok) {
+          console.warn(
+            `Failed to fetch article ${id}: ${response.status} ${response.statusText}`,
+          );
+          return null;
+        }
+
+        const article = await response.json();
+
+        if (article) {
+          // Save to database
+          try {
+            await db.saveArticle(article);
+            console.log(`Saved article ${article.id}: ${article.title}`);
+            return article;
+          } catch (saveError) {
+            console.error(`Error saving article ${id} to database:`, saveError);
+            return null;
+          }
+        }
+
+        return null;
+      } catch (error) {
+        console.error(`Error processing article ${id}:`, error);
+        return null;
+      }
+    });
+
+    // Wait for all articles to be processed
+    const results = await Promise.all(articlePromises);
+
+    // Filter out null results
+    const savedArticles = results.filter((article) => article !== null);
+
+    console.log(
+      `${new Date().toISOString()} - Completed fetching articles. Saved ${savedArticles.length} new articles.`,
+    );
+
+    return savedArticles;
+  } catch (error) {
+    console.error("Error in fetchHackerNewsArticles:", error);
+  }
+}
+
 // Middleware to parse JSON
 app.use(express.json());
 
@@ -69,10 +147,10 @@ app.post("/api/articles/batch", async (req, res) => {
     }
 
     // Limit batch size to prevent abuse
-    if (ids.length > 100) {
+    if (ids.length > 200) {
       return res
         .status(400)
-        .json({ error: "Maximum 100 IDs allowed per request" });
+        .json({ error: "Maximum 200 IDs allowed per request" });
     }
 
     // Remove duplicates and ensure all IDs are integers
@@ -221,10 +299,10 @@ app.post("/api/ai-summaries/batch", async (req, res) => {
     }
 
     // Limit batch size to prevent abuse
-    if (articleIds.length > 100) {
+    if (articleIds.length > 200) {
       return res
         .status(400)
-        .json({ error: "Maximum 100 article IDs allowed per request" });
+        .json({ error: "Maximum 200 article IDs allowed per request" });
     }
 
     // Remove duplicates and ensure all IDs are integers
@@ -565,9 +643,17 @@ app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "src", "index.html"));
 });
 
+// Set up hourly interval to fetch new articles
+const fetchInterval = setInterval(fetchHackerNewsArticles, 60 * 60 * 1000); // 1 hour interval
+console.log("Starting hourly article fetch process...");
+
+// Perform initial fetch after a short delay to let the server start up
+setTimeout(fetchHackerNewsArticles, 10000); // Initial fetch after 10 seconds
+
 // Graceful shutdown
 process.on("SIGINT", () => {
   console.log("\nShutting down gracefully...");
+  clearInterval(fetchInterval); // Clear the interval to stop scheduled fetches
   db.close();
   process.exit(0);
 });

@@ -837,12 +837,12 @@ class HackerNewsApp {
   async loadInitialData() {
     this.showLoading();
     try {
-      // 获取前30个热门文章ID（减少初始加载量以提升性能）
-      const topIds = await HackerNewsAPI.getStories("topstories", 30);
-      // 获取前20个新文章ID（减少初始加载量以提升性能）
-      const newIds = await HackerNewsAPI.getStories("newstories", 20);
-      // 获取前20个最佳文章ID（减少初始加载量以提升性能）
-      const bestIds = await HackerNewsAPI.getStories("beststories", 20);
+      // 获取前200个热门文章ID
+      const topIds = await HackerNewsAPI.getStories("topstories", 200);
+      // 获取前200个新文章ID
+      const newIds = await HackerNewsAPI.getStories("newstories", 200);
+      // 获取前200个最佳文章ID
+      const bestIds = await HackerNewsAPI.getStories("beststories", 200);
 
       // 合并所有ID并去重
       const allIds = [...new Set([...topIds, ...newIds, ...bestIds])];
