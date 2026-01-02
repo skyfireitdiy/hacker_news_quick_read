@@ -22,7 +22,10 @@ async function loadOpenAIConfig() {
       openAIConfig = { ...openAIConfig, ...config };
     }
   } catch (error) {
-    console.warn("Could not load OpenAI config, using default settings:", error);
+    console.warn(
+      "Could not load OpenAI config, using default settings:",
+      error,
+    );
   }
 }
 
@@ -578,17 +581,19 @@ class HackerNewsApp {
             '<div class="text-blue-500">Fetching content from URL...</div>';
 
           // 使用后端无头浏览器API获取内容，可以处理JavaScript渲染的页面
-          const response = await fetch(`${DB_API_BASE}/api/render-url-content?url=${encodeURIComponent(article.url)}`);
-          
+          const response = await fetch(
+            `${DB_API_BASE}/api/render-url-content?url=${encodeURIComponent(article.url)}`,
+          );
+
           if (response.ok) {
             const data = await response.json();
             content = data.content;
-            
+
             // 清理文本内容
             content = content
-              .replace(/\s+/g, ' ') // 将多个空白字符替换为单个空格
+              .replace(/\s+/g, " ") // 将多个空白字符替换为单个空格
               .trim();
-            
+
             // 确保内容不是太长，如果太长则截断
             if (content.length > 10000) {
               // 限制为10000字符
@@ -597,50 +602,18 @@ class HackerNewsApp {
                 "... [Content truncated due to length]";
             }
           } else {
-            // 如果获取URL内容失败，回退到原来的实现
+            // 如果获取URL内容失败，使用原文URL和标题作为fallback
             console.warn(
-              `Failed to fetch content with puppeteer, trying direct fetch: ${response.status} ${response.statusText}`
+              `Failed to fetch content with backend API: ${response.status} ${response.statusText}`,
             );
-            
-            // 回退到原来的直接fetch方式
-            const directResponse = await fetch(article.url);
-            if (directResponse.ok) {
-              const html = await directResponse.text();
-              
-              // 解析HTML并提取文本内容
-              const parser = new DOMParser();
-              const doc = parser.parseFromString(html, 'text/html');
-              
-              // 移除script和style元素以避免提取它们的内容
-              const scripts = doc.querySelectorAll('script, style, noscript');
-              scripts.forEach(el => el.remove());
-              
-              // 获取文本内容
-              content = doc.body ? doc.body.textContent : doc.textContent;
-              
-              // 清理文本内容
-              content = content
-                .replace(/\s+/g, ' ') // 将多个空白字符替换为单个空格
-                .trim();
-              
-              // 确保内容不是太长，如果太长则截断
-              if (content.length > 10000) {
-                // 限制为10000字符
-                content =
-                  content.substring(0, 10000) +
-                  "... [Content truncated due to length]";
-              }
-            } else {
-              // 如果获取URL内容失败，使用原文URL和标题作为fallback
-              content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
-            }
+            content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
           }
         } catch (urlError) {
           console.warn(
-            "Could not fetch content from URL, using fallback:",
+            "Could not fetch content from URL via backend API, using fallback:",
             urlError,
           );
-          // 如果获取URL内容失败，使用原文URL和标题作为fallback
+          // 如果通过后端API获取URL内容失败，使用原文URL和标题作为fallback
           content = `External link: ${article.url}. Title: ${article.title}. Content not available.`;
         }
       }
@@ -686,7 +659,7 @@ class HackerNewsApp {
 
       // 服务器端会处理API密钥验证，这里不因API密钥问题禁用按钮
       if (error.message.includes("API key")) {
-        btn.disabled = false;  // 服务器端处理密钥检查，按钮保持可用
+        btn.disabled = false; // 服务器端处理密钥检查，按钮保持可用
         btn.title = "";
         btn.textContent = "AI Summary";
       } else {
