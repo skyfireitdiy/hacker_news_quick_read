@@ -1,0 +1,30 @@
+{
+  "name": "hacker-news-quick-read",
+  "version": "1.0.0",
+  "description": "A beautiful web application for browsing Hacker News articles with powerful search and filtering capabilities, built with Zen-iOS Hybrid design principles.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "npx serve ./src",
+    "dev": "npx serve ./src",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "hacker-news",
+    "api",
+    "frontend",
+    "javascript",
+    "tailwindcss",
+    "web-app",
+    "search",
+    "filtering"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

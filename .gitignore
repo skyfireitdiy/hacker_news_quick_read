@@ -87,3 +87,5 @@ cmake-build-*/
 
 # .NET
 obj/
+hacker_news.db
+openai_config.json

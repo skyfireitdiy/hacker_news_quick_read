@@ -1,4 +1,73 @@
-# Hacker News API
+# Hacker News Quick Reader
+
+A beautiful, modern web application for browsing Hacker News articles with powerful search and filtering capabilities.
+
+## Features
+
+- **Modern UI**: Built with Zen-iOS Hybrid design principles for a premium feel
+- **Real-time Data**: Fetches latest articles from Hacker News API
+- **Powerful Search**: Find articles by keywords in titles and content
+- **Type Filtering**: Filter by article types (Stories, Jobs, Ask HN, Polls)
+- **AI Summaries**: Get AI-generated summaries of articles using OpenAI API
+- **Local Database**: SQLite database for caching articles and AI summaries
+- **Responsive Layout**: Dynamic two-column layout on larger screens
+- **Dense Layout**: Compact information display with optimized spacing
+- **Responsive Design**: Works on all device sizes
+- **Fast Performance**: Optimized loading and rendering with caching
+
+## Design Principles
+
+This application follows the **Zen-iOS Hybrid** design language:
+
+- **Material Depth**: Uses frosted glass effects with backdrop blur
+- **Dual-stroke Borders**: Physical-like inner and outer borders
+- **iOS-style Curvature**: Rounded corners following iOS design language
+- **High Contrast**: Dark mode inspired elements with deep space black
+- **Tactile Feedback**: Interactive elements have scale feedback
+- **Breathing Space**: Generous padding and whitespace for better readability
+
+## How to Use
+
+### Configuration
+1. The `openai_config.json` file is used for storing your OpenAI configuration but is not tracked by git for security reasons.
+2. Create and edit `openai_config.json` in the project root to add your OpenAI API key:
+   ```json
+   {
+     "base_url": "https://api.openai.com/v1",
+     "api_key": "your-api-key-here",
+     "model": "gpt-3.5-turbo"
+   }
+   ```
+
+### Direct Browser Access
+1. Open `src/index.html` in your browser
+2. Browse the latest Hacker News articles
+3. Use the search bar to find articles by keyword
+4. Filter by article type using the filter buttons
+5. Click the "AI Summary" button next to articles to get AI-generated summaries
+6. Click "Load More" to see additional articles
+
+### Using Local Server
+1. Install Node.js dependencies: `npm install`
+2. Start the server: `npm start` or `node server.js`
+3. Open http://localhost:3000 in your browser
+4. Use the application as described above
+
+## API Used
+
+This application uses the official [Hacker News API](https://github.com/HackerNews/API) to fetch real-time data:
+
+- `/v0/topstories.json` - Top stories
+- `/v0/newstories.json` - New stories
+- `/v0/beststories.json` - Best stories
+- `/v0/item/<id>.json` - Individual article details
+
+## Technical Implementation
+
+- **Frontend**: Pure JavaScript with modern ES6+ features
+- **Styling**: Tailwind CSS with custom design extensions
+- **Performance**: Asynchronous loading and virtualization
+- **Security**: HTML sanitization to prevent XSS attacks
 
 ## Overview
 
