@@ -1,0 +1,13 @@
+node_modules
+*.log
+*.pid
+.git
+.env
+.gitignore
+README.md
+LICENSE
+# Database file (should be persistent in volume)
+hacker_news.db
+tmp/
+.DS_Store
+Thumbs.db
