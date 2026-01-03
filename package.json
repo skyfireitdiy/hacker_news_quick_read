@@ -1,6 +1,6 @@
 {
   "name": "hacker-news-quick-read",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A beautiful web application for browsing Hacker News articles with powerful search and filtering capabilities, built with Zen-iOS Hybrid design principles.",
   "main": "src/app.js",
   "scripts": {
