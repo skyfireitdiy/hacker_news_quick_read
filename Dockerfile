@@ -3,8 +3,7 @@ FROM node:18-bullseye
 
 # Install system dependencies required for Puppeteer
 RUN apt-get update && apt-get install -y \
-    chromium-browser \
-    chromium-common \
+    chromium \
     ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
@@ -47,8 +46,8 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Create symbolic link for chromium-browser
-RUN ln -s /usr/bin/chromium-browser /usr/bin/chromium
+# Ensure chromium executable is available at expected location
+RUN if [ -f /usr/bin/chromium ]; then ln -sf /usr/bin/chromium /usr/bin/chromium-browser; fi
 
 # Create app directory
 WORKDIR /app
@@ -73,8 +72,8 @@ RUN chown -R hacker-news:nodejs /app
 RUN mkdir -p /app/data && chown hacker-news:nodejs /app/data
 
 # Set Puppeteer to use installed Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD="false" \
-    PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium-browser"
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD="true" \
+    PUPPETEER_EXECUTABLE_PATH="/usr/bin/chromium"
 
 # Expose port
 EXPOSE 3000
