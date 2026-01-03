@@ -18,7 +18,10 @@ RUN apk add --no-cache \
     lcms2-dev \
     openjpeg-dev \
     jbig2dec \
-    libwebp-dev
+    libwebp-dev \
+    python3 \
+    make \
+    g++
 
 # Create app directory
 WORKDIR /app
