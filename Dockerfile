@@ -1,28 +1,54 @@
 # Use official Node.js runtime as base image
-FROM node:18-alpine
+FROM node:18-bullseye
 
 # Install system dependencies required for Puppeteer
-RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    freetype-dev \
-    harfbuzz \
+RUN apt-get update && apt-get install -y \
+    chromium-browser \
+    chromium-common \
     ca-certificates \
-    ttf-freefont \
-    cairo \
-    jpeg-dev \
-    pango \
-    musl-dev \
-    giflib-dev \
-    lcms2-dev \
-    openjpeg-dev \
-    jbig2dec \
-    libwebp-dev \
+    fonts-liberation \
+    libappindicator3-1 \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libc6 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    lsb-release \
+    wget \
+    xdg-utils \
     python3 \
     python3-dev \
-    make \
-    g++
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create symbolic link for chromium-browser
+RUN ln -s /usr/bin/chromium-browser /usr/bin/chromium
 
 # Create app directory
 WORKDIR /app
@@ -34,8 +60,8 @@ COPY package*.json ./
 RUN npm install --production
 
 # Create non-root user and set permissions
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S hacker-news -u 1001
+RUN groupadd -g 1001 nodejs && \
+    useradd -u 1001 -m -s /bin/bash -g nodejs hacker-news
 
 # Copy application code
 COPY . .
