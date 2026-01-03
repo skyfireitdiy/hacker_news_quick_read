@@ -20,6 +20,7 @@ RUN apk add --no-cache \
     jbig2dec \
     libwebp-dev \
     python3 \
+    py3-distutils \
     make \
     g++
 
