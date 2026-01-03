@@ -167,9 +167,13 @@ fi
 NEW_VERSION=$(node -p "require('./package.json').version")
 print_success "Version updated to $NEW_VERSION"
 
-# Push changes to remote repository (tags are automatically pushed with commits if they exist)
+# Push changes to remote repository
 print_info "Pushing changes to remote repository..."
 git push origin main
+
+# Push tags to trigger Docker image build workflow
+print_info "Pushing tags to trigger Docker image build..."
+git push --tags
 
 print_success "Changes and tags pushed successfully!"
 
