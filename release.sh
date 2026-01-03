@@ -50,6 +50,38 @@ ask_confirmation() {
     fi
 }
 
+# Function to increment version numbers
+version_increment() {
+    local current_version=$1
+    local increment_type=$2
+    
+    # Extract major, minor, patch from version string
+    local major=$(echo $current_version | cut -d. -f1)
+    local minor=$(echo $current_version | cut -d. -f2)
+    local patch=$(echo $current_version | cut -d. -f3)
+    
+    case $increment_type in
+        "major")
+            major=$((major + 1))
+            minor=0
+            patch=0
+            ;;
+        "minor")
+            minor=$((minor + 1))
+            patch=0
+            ;;
+        "patch")
+            patch=$((patch + 1))
+            ;;
+        *)
+            print_error "Invalid increment type: $increment_type"
+            exit 1
+            ;;
+    esac
+    
+    echo "$major.$minor.$patch"
+}
+
 # Check if running from git repository root
 if [[ ! -d ".git" ]]; then
     print_error "This script must be run from the root of the git repository."
@@ -79,9 +111,9 @@ VERSION_TYPE="${1:-}"  # Use first argument or empty string
 
 if [[ -z "$VERSION_TYPE" ]]; then
     echo "Select version type:"
-    echo "1) patch ($CURRENT_VERSION -> $(npm version patch --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
-    echo "2) minor ($CURRENT_VERSION -> $(npm version minor --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
-    echo "3) major ($CURRENT_VERSION -> $(npm version major --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
+    echo "1) patch ($CURRENT_VERSION -> $(version_increment $CURRENT_VERSION patch))"
+    echo "2) minor ($CURRENT_VERSION -> $(version_increment $CURRENT_VERSION minor))"
+    echo "3) major ($CURRENT_VERSION -> $(version_increment $CURRENT_VERSION major))"
     echo "4) custom (specify version manually)"
     read -p "Enter choice (1-4): " choice
     
@@ -112,10 +144,7 @@ if [[ -z "$NEW_VERSION" ]]; then
     fi
     
     # Get new version without applying changes
-    NEW_VERSION=$(npm version $VERSION_TYPE --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || {
-        print_error "Failed to determine new version using npm version $VERSION_TYPE"
-        exit 1
-    })
+    NEW_VERSION=$(version_increment $CURRENT_VERSION $VERSION_TYPE)
 fi
 
 print_info "New version will be: $NEW_VERSION"
