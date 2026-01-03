@@ -79,9 +79,9 @@ VERSION_TYPE="${1:-}"  # Use first argument or empty string
 
 if [[ -z "$VERSION_TYPE" ]]; then
     echo "Select version type:"
-    echo "1) patch ($CURRENT_VERSION -> $(npm version patch --dry-run 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
-    echo "2) minor ($CURRENT_VERSION -> $(npm version minor --dry-run 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
-    echo "3) major ($CURRENT_VERSION -> $(npm version major --dry-run 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
+    echo "1) patch ($CURRENT_VERSION -> $(npm version patch --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
+    echo "2) minor ($CURRENT_VERSION -> $(npm version minor --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
+    echo "3) major ($CURRENT_VERSION -> $(npm version major --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || echo "N/A"))"
     echo "4) custom (specify version manually)"
     read -p "Enter choice (1-4): " choice
     
@@ -112,7 +112,7 @@ if [[ -z "$NEW_VERSION" ]]; then
     fi
     
     # Get new version without applying changes
-    NEW_VERSION=$(npm version $VERSION_TYPE --dry-run 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || {
+    NEW_VERSION=$(npm version $VERSION_TYPE --dry-run 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || {
         print_error "Failed to determine new version using npm version $VERSION_TYPE"
         exit 1
     })
@@ -138,10 +138,9 @@ fi
 NEW_VERSION=$(node -p "require('./package.json').version")
 print_success "Version updated to $NEW_VERSION"
 
-# Push changes and tag to remote repository
-print_info "Pushing changes and tags to remote repository..."
+# Push changes to remote repository (tags are automatically pushed with commits if they exist)
+print_info "Pushing changes to remote repository..."
 git push origin main
-git push origin v$NEW_VERSION
 
 print_success "Changes and tags pushed successfully!"
 
@@ -154,4 +153,5 @@ print_info "- $(echo $NEW_VERSION | cut -d. -f1)"  # major
 print_info "- SHA tag"
 
 print_success "Release process completed successfully!"
-print_success "Docker image will be available at: ghcr.io/$(basename $(git remote get-url origin .git) .git):$NEW_VERSION"
+REPO_NAME=$(basename $(git remote get-url origin) .git)
+print_success "Docker image will be available at: ghcr.io/$REPO_NAME:$NEW_VERSION"
