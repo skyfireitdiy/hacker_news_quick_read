@@ -3,8 +3,7 @@ const path = require("path");
 const Database = require("./database");
 const { JSDOM } = require("jsdom");
 
-// 使用 node-fetch v3 的方式
-const { default: fetch } = require("node-fetch");
+// 使用 Node.js 18+ 内置的 fetch
 const puppeteer = require("puppeteer");
 const app = express();
 const PORT = process.env.PORT || 3000;
