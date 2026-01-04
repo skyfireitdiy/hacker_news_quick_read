@@ -96,4 +96,3 @@ cmake-build-*/
 obj/
 hacker_news.db
 openai_config.json
-package-lock.json
